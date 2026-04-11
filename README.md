@@ -14,19 +14,12 @@ Restart Pi to load the extension.
 
 ### Verify Installation
 
-After restarting Pi, the `switch_model` tool should be available. Ask the agent to "list available models" to confirm.
+After restarting Pi, the `switch_model` tool should be available. Ask the agent to "list available models" or check the tools list to confirm.
 
 ### Updating
 
-If you used curl:
 ```bash
-curl -o ~/.pi/agent/extensions/model-switch/index.ts \
-  https://raw.githubusercontent.com/nicobailon/pi-model-switch/main/index.ts
-```
-
-If you cloned:
-```bash
-cd ~/.pi/agent/extensions/model-switch && git pull
+pi install npm:pi-model-switch
 ```
 
 Restart Pi after updating.
@@ -57,7 +50,24 @@ Then just say "switch to cheap" or "use coding model".
 
 ### AGENTS.md
 
-Add model switching preferences to your `AGENTS.md` for contextual decisions:
+Add model switching preferences to your `AGENTS.md` for contextual decisions. Here's an example that sets up a **two-phase workflow** (intent gathering → implementation → review):
+
+```markdown
+## Model Switching via pi-model-switch
+
+The `switch_model` tool lets you change models mid-conversation. Usage: `switch_model action="switch" search="<provider>/<model>"`
+
+**Two-phase workflow:**
+- **Intent/Requirements** (unclear what user wants): use opencode-go/kimi-2.5
+- **Technical/Coding** (ready to implement): use openai-codex/gpt-5.3-codex
+- **Done Coding** (done implementing): switch back to opencode-go/kimi-2.5
+
+Other actions: `action="list"` to see models, `action="search"` to filter.
+```
+
+*Use models you have API keys configured for. Run `list available models` to see your available options.*
+
+**Simple preference-based switching** also works:
 
 ```markdown
 ## Model preferences
@@ -66,7 +76,7 @@ Add model switching preferences to your `AGENTS.md` for contextual decisions:
 - Default to budget-friendly models unless quality is needed
 ```
 
-The agent will use aliases when appropriate based on your guidance.
+The agent will use the `switch_model` tool automatically based on your guidance.
 
 ## Usage
 

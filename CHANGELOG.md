@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-04-11
+
+### Changed
+- Added AGENTS.md workflow example for intent → coding → review model switching
+- Simplified update instructions to use `pi install npm:pi-model-switch` only
+- Added `promptSnippet` guidance so the agent uses `switch_model` more reliably
+
+### Fixed
+- Constrained `action` parameter schema to explicit enum values (`list`, `search`, `switch`)
+
 ## [0.1.2] - 2026-02-01
 
 ### Changed

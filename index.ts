@@ -1,4 +1,5 @@
 import type { ExtensionFactory } from "@mariozechner/pi-coding-agent";
+import { StringEnum } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -27,9 +28,11 @@ const extension: ExtensionFactory = (pi) => {
 		name: "switch_model",
 		label: "Switch Model",
 		description:
-			"List, search, or switch models. Supports aliases defined in aliases.json (e.g. 'cheap', 'coding'). Use when the user asks to change models or when you need a model with different capabilities (reasoning, vision, cost, context window).",
+			"List, search, or switch models. Supports aliases defined in aliases.json (e.g. 'cheap', 'coding'). Use when the user mentions a model by name, asks to change/switch/try/test with a specific model, or when you need a model with different capabilities (reasoning, vision, cost, context window).",
+		promptSnippet:
+			"Use this tool when the user asks to list/search/switch models, requests a specific model/provider, or asks for cheaper/faster/vision/reasoning-capable models. Prefer action='search' before action='switch' when intent is ambiguous.",
 		parameters: Type.Object({
-			action: Type.String({
+			action: StringEnum(["list", "search", "switch"] as const, {
 				description: "Action to perform: 'list' (show all models), 'search' (filter by query), or 'switch' (change model)",
 			}),
 			search: Type.Optional(
