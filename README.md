@@ -1,8 +1,13 @@
 # pi-model-switch
 
-A [Pi coding agent](https://github.com/badlogic/pi-mono) extension that gives the agent the ability to list, search, and switch models on its own.
+A [Pi coding agent](https://github.com/badlogic/pi-mono) extension for model and role switching.
 
-With this extension, you can tell the agent things like "switch to a cheaper model" or "use Claude for this task" and it will handle the model change itself, without you needing to use `/model` or keyboard shortcuts.
+It provides:
+
+- `switch_model` tool for model listing/search/switching
+- `switch_role` tool for role listing/search/status/switching
+- `/role` command for interactive role switching
+- Role drift detection and session-branch persistence
 
 ## Installation
 
@@ -12,124 +17,155 @@ pi install npm:pi-model-switch
 
 Restart Pi to load the extension.
 
-### Verify Installation
+## Tools
 
-After restarting Pi, the `switch_model` tool should be available. Ask the agent to "list available models" or check the tools list to confirm.
+### `switch_model`
 
-### Updating
+`switch_model` remains model-focused.
 
-```bash
-pi install npm:pi-model-switch
+Parameters:
+
+- `action`: `list | search | switch`
+- `search?`: query for `search` and `switch`
+- `provider?`: provider filter
+
+Behavior:
+
+- `list`: shows available authenticated models
+- `search`: filters by provider/id/name
+- `switch`: alias lookup, then exact/partial model matching
+
+### `switch_role`
+
+`switch_role` manages full role activation.
+
+Parameters:
+
+- `action`: `list | search | switch | status`
+- `search?`: query for `search` and `switch`
+
+Behavior:
+
+- `list`: shows configured roles with active marker
+- `search`: filters roles by id/label/model
+- `switch`: applies model + thinking + exact tools + optional instructions, then persists role state
+- `status`: shows active role and snapshot details
+
+## Role configuration
+
+Define roles in settings as a keyed object (`agentRoles`).
+
+- Global settings: `~/.pi/agent/settings.json`
+- Project settings: `.pi/settings.json`
+
+```json
+{
+  "roleInstructionMode": "append-message",
+  "agentRoles": {
+    "reviewer": {
+      "label": "Reviewer",
+      "model": "anthropic/claude-sonnet-4",
+      "thinking": "medium",
+      "tools": ["read", "bash", "grep"],
+      "instructions": "Prioritize correctness, risk, and maintainability findings."
+    },
+    "planner": {
+      "label": "Planner",
+      "model": "openai/gpt-5.2",
+      "thinking": "high",
+      "tools": ["read", "bash", "grep", "find", "ls"],
+      "instructionsFile": "roles/planner.md"
+    }
+  }
+}
 ```
 
-Restart Pi after updating.
+Schema rules:
 
-## Configuration
+- Role id is the object key
+- Required: `label`, `model`, `thinking`, `tools`
+- `model` must be `provider/modelId`
+- `thinking` must be one of `off|minimal|low|medium|high|xhigh`
+- `tools` is exact, not additive
+- Use only one of `instructions` or `instructionsFile`
+- Role is still valid if neither instruction field is provided
 
-### Model Aliases
+Merge behavior:
 
-Create `aliases.json` in the extension directory to define shortcuts:
+- Global and project roles are loaded together
+- Project roles override global roles by id
+- Project role override is full replacement for that id
 
-```bash
+`instructionsFile` path behavior:
+
+- Global role paths resolve relative to `~/.pi/agent`
+- Project role paths resolve relative to `.pi`
+- Absolute paths are supported
+- `~` expansion is supported
+
+## Instruction modes
+
+`roleInstructionMode` supports:
+
+- `append-message` (default): inject compact role guidance in `context` per turn (non-persistent)
+- `system-prompt`: append role instructions per prompt in `before_agent_start`
+
+## Role commands and shortcuts
+
+Slash command:
+
+```text
+/role             — open role picker
+/role list        — multiline role list overlay
+/role <id>        — switch directly to role id
+```
+
+Shortcut settings use a dedicated namespace:
+
+```json
+{
+  "modelSwitchShortcuts": {
+    "roleCycle": "alt+shift+tab",
+    "roleSelect": "ctrl+alt+m"
+  }
+}
+```
+
+Defaults:
+
+- `alt+shift+tab` cycles roles
+- `ctrl+alt+m` opens role picker
+
+## Role state and drift
+
+Active role state is persisted as branch-local custom entries of type:
+
+- `model-switch-role-state`
+
+Manual changes to model (including `switch_model`), thinking, or tools clear active role state with:
+
+- `Role cleared: settings changed manually`
+
+On restore, role tools are re-applied only when role state is still valid.
+
+## Aliases for `switch_model`
+
+Define aliases in:
+
+```text
 ~/.pi/agent/extensions/model-switch/aliases.json
 ```
 
 ```json
 {
   "cheap": "google/gemini-2.5-flash",
-  "fast": "google/gemini-2.5-flash",
   "coding": "anthropic/claude-opus-4-5",
-  "budget": ["openai/gpt-5-mini", "google/gemini-2.5-flash", "anthropic/claude-3-5-haiku-latest"]
+  "budget": ["openai/gpt-5-mini", "google/gemini-2.5-flash"]
 }
 ```
 
-- **String value**: Must be an available model or returns an error
-- **Array value**: Uses first available model in the list (fallback chain)
-
-Then just say "switch to cheap" or "use coding model".
-
-### AGENTS.md
-
-Add model switching preferences to your `AGENTS.md` for contextual decisions. Here's an example that sets up a **two-phase workflow** (intent gathering → implementation → review):
-
-```markdown
-## Model Switching via pi-model-switch
-
-The `switch_model` tool lets you change models mid-conversation. Usage: `switch_model action="switch" search="<provider>/<model>"`
-
-**Two-phase workflow:**
-- **Intent/Requirements** (unclear what user wants): use opencode-go/kimi-2.5
-- **Technical/Coding** (ready to implement): use openai-codex/gpt-5.3-codex
-- **Done Coding** (done implementing): switch back to opencode-go/kimi-2.5
-
-Other actions: `action="list"` to see models, `action="search"` to filter.
-```
-
-*Use models you have API keys configured for. Run `list available models` to see your available options.*
-
-**Simple preference-based switching** also works:
-
-```markdown
-## Model preferences
-- Simple file ops / quick questions: switch to "cheap"
-- Complex refactoring / architecture: switch to "coding"
-- Default to budget-friendly models unless quality is needed
-```
-
-The agent will use the `switch_model` tool automatically based on your guidance.
-
-## Usage
-
-Once installed, the agent gains a `switch_model` tool. Just ask naturally:
-
-- "List available models"
-- "Switch to GPT-5.2"
-- "Use Opus 4.5"
-- "Change to a model with vision capabilities"
-- "Use a cheaper model for this task"
-
-The agent will list models or switch as appropriate.
-
-## Tool Reference
-
-The extension registers a single tool:
-
-**switch_model**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `action` | `"list"` \| `"search"` \| `"switch"` | List all models, search/filter models, or switch to one |
-| `search` | string (optional) | For search/switch: term to match model by provider, id, or name |
-| `provider` | string (optional) | Filter to a specific provider (e.g. 'anthropic', 'openai', 'google') |
-
-### List action
-
-Returns all models you have API keys configured for, showing:
-- Provider and model ID
-- Model name
-- Context window and max output tokens
-- Capabilities (reasoning, vision)
-- Cost per 1M tokens (input/output)
-- Which model is currently active
-
-### Search action
-
-Filters models by partial match on provider, id, or name. Returns all matching models with full details.
-
-### Switch action
-
-Matches models by:
-1. Alias lookup (if defined in `aliases.json`)
-2. Exact `provider/id` match
-3. Exact `id` match
-4. Partial match on id, name, or provider
-
-If multiple models match, it asks you to be more specific.
-
-## Requirements
-
-- [Pi coding agent](https://github.com/badlogic/pi-mono)
-- API keys configured for the models you want to use
+- String alias: one exact model target
+- Array alias: fallback chain; first available wins
 
 ## License
 
