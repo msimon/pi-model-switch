@@ -2,18 +2,11 @@
 
 ## [Unreleased]
 
-### Added
-- Added role runtime ownership to `model-switch` with merged `agentRoles` loading, role restore/drift logic, per-turn role instruction injection, and `/role` command support.
-- Added `switch_role` tool with `list`, `search`, `switch`, and `status` actions.
-- Added `modelSwitchShortcuts.roleCycle` and `modelSwitchShortcuts.roleSelect` settings for role keyboard controls.
-
-### Changed
-- Kept `switch_model` focused on model operations while role operations moved to `switch_role`.
-- Added eager role drift revalidation for role-facing UI/tool paths so stale active-role state is cleared before status/list/picker operations.
-- Clear active role ownership directly in successful `switch_model` switches (while retaining drift/model hooks as backup).
+## [0.1.4] - 2026-04-14
 
 ### Fixed
-- Fixed role picker overlay rendering by using the correct `SelectList` theme shape, preventing runtime crashes when opening `/role` picker or role select shortcut.
+- Constrained the `switch_model.action` schema to explicit enum values with `Type.Union` literals.
+- Fixed malformed `aliases.json` handling so invalid alias shapes fail with explicit config errors instead of crashing later during `switch_model`.
 
 ## [0.1.3] - 2026-04-11
 
