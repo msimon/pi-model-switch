@@ -2,6 +2,9 @@ import type { ExtensionFactory } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 type AliasConfig = Record<string, string | string[]>;
@@ -107,7 +110,9 @@ function formatModelLine(
 
 const extension: ExtensionFactory = (pi) => {
 	const extensionDir = dirname(fileURLToPath(import.meta.url));
-	const { aliases, error: aliasLoadError } = loadAliases(extensionDir);
+	const userAliasDir = join(homedir(), ".pi", "agent", "extensions", "model-switch");
+	const aliasDir = existsSync(join(userAliasDir, "aliases.json")) ? userAliasDir : extensionDir;
+	const { aliases, error: aliasLoadError } = loadAliases(aliasDir);
 
 	pi.registerTool({
 		name: "switch_model",
