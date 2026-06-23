@@ -2,8 +2,6 @@ import type { ExtensionFactory } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 
